@@ -1,2 +1,22 @@
-# stm32f4xx_exp
-Репозиторий для удобного хранения и обновления заготовок проектов для stm32f4xx
+# stm32f4xx_cmake_example
+Пример проекта под stm32f4xx с использованием arm-none-eabi toolchain и cmake
+
+## Сборка
+```
+$ git clone https://github.com/zeProdigy/stm32f4xx_cmake_example.git
+$ cd stm32f4xx_cmake_example
+$ mkdir build
+$ cd build
+$ cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake ..
+$ make
+```
+
+Конвертация elf -> bin
+```
+$ arm-none-eabi-objcopy -O binary <elf_file_name> <new_bin_file_name>
+```
+
+Зашивка через texane st-link utility
+```
+$ ./st-flash write <path_to_bin_file> 0x08000000
+```
