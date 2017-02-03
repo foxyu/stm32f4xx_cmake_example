@@ -11,12 +11,18 @@ $ cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake ..
 $ make
 ```
 
-Конвертация elf -> bin
+## Для подключения к проекту FreeRTOS включить опцию:
+```
+cmake -DFREERTOS=ON -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake ..
+```
+При зашивке в stm32f4Discovery плата должна бодро моргать светодиодами средствами ОСРВ
+
+## Конвертация elf -> bin
 ```
 $ arm-none-eabi-objcopy -O binary <elf_file_name> <new_bin_file_name>
 ```
 
-Зашивка через texane st-link utility
+## Зашивка через texane st-link utility
 ```
 $ ./st-flash write <path_to_bin_file> 0x08000000
 ```

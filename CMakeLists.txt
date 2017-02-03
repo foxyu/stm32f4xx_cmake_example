@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(stm32f4xx_base C CXX ASM)
 
+option(FREERTOS "Build target with include FreeRTOS" OFF)
+
 set(LINKER_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/STM32F407VGTx_FLASH.ld")
 
 add_definitions(-DSTM32F407xx)
@@ -28,5 +30,22 @@ include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/CMSIS/device/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
+
+if(FREERTOS)
+    add_definitions(-DFREERTOS)
+
+    aux_source_directory("${CMAKE_CURRENT_SOURCE_DIR}/FreeRTOS/Source" FREERTOS_SOURCES)
+
+    set(SOURCES "${SOURCES}"
+        "${FREERTOS_SOURCES}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/FreeRTOS/Source/portable/MemMang/heap_2.c"
+    )
+
+    include_directories(
+        "${CMAKE_CURRENT_SOURCE_DIR}/FreeRTOS/Source/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/FreeRTOS/Source/portable/GCC/ARM_CM4F"
+    )
+endif(FREERTOS)
 
 add_executable(${PROJECT_NAME} ${SOURCES})

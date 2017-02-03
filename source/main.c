@@ -1,34 +1,61 @@
+#include "string.h"
 #include "stm32f4xx_hal.h"
+
+#ifdef FREERTOS
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h"
+#include "semphr.h"
+#endif
+
+typedef struct {
+    uint16_t pin;
+    uint16_t delay;
+} pin_toggle_t;
+
+pin_toggle_t pin_toggle[4];
 
 void SystemClock_Config(void);
 void Error_Handler(void);
-static void MX_GPIO_Init(void);
+static void GPIO_Init(void);
+
+#ifdef FREERTOS
+void CreateTask(void);
+#endif
 
 int main(void){
-
-  HAL_Init();
   SystemClock_Config();
-  MX_GPIO_Init();
+  GPIO_Init();
+
+  #ifdef FREERTOS
+
+  CreateTask();
+
+  while(1){}
+
+  #else
 
   while (1){
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
 
-	  for (unsigned long i = 0; i < 10000000; i++){
-		  asm("nop");
-	  }
+   for (unsigned long i = 0; i < 10000000; i++){
+    asm("nop");
+   }
 
       HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
 
-	  for (unsigned long i = 0; i < 10000000; i++){
-		  asm("nop");
-	  }
+   for (unsigned long i = 0; i < 10000000; i++){
+    asm("nop");
+   }
   }
+
+  #endif
 }
 
 void SystemClock_Config(void)
@@ -74,7 +101,7 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
-static void MX_GPIO_Init(void){
+static void GPIO_Init(void){
   GPIO_InitTypeDef GPIO_InitStruct;
 
   /* GPIO Ports Clock Enable */
@@ -85,11 +112,65 @@ static void MX_GPIO_Init(void){
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 }
 
 void Error_Handler(void){
-
   while(1){
-
   }
 }
+
+#ifdef FREERTOS
+void vBlinkTask (void *pvParameters){
+    pin_toggle_t *pin_toggle = (pin_toggle_t *) pvParameters;
+    pin_toggle_t toggle;
+
+    memcpy(&toggle, pin_toggle, sizeof(pin_toggle_t));
+
+    while(1){
+        HAL_GPIO_WritePin(GPIOD, toggle.pin, GPIO_PIN_SET);
+        vTaskDelay(toggle.delay);
+        HAL_GPIO_WritePin(GPIOD, toggle.pin, GPIO_PIN_RESET);
+        vTaskDelay(toggle.delay);
+    }
+
+    vTaskDelete(NULL);
+}
+
+void CreateTask(void){
+    pin_toggle[0].pin = GPIO_PIN_12;
+    pin_toggle[0].delay = 100;
+    xTaskCreate(vBlinkTask, "BlinkTask1", configMINIMAL_STACK_SIZE, (void *) &pin_toggle[0], tskIDLE_PRIORITY + 1, NULL);
+
+    pin_toggle[1].pin = GPIO_PIN_13;
+    pin_toggle[1].delay = 200;
+    xTaskCreate(vBlinkTask, "BlinkTask2", configMINIMAL_STACK_SIZE, (void *) &pin_toggle[1], tskIDLE_PRIORITY + 1, NULL);
+
+    pin_toggle[2].pin = GPIO_PIN_14;
+    pin_toggle[2].delay = 400;
+    xTaskCreate(vBlinkTask, "BlinkTask3", configMINIMAL_STACK_SIZE, (void *) &pin_toggle[2], tskIDLE_PRIORITY + 1, NULL);
+
+    pin_toggle[3].pin = GPIO_PIN_15;
+    pin_toggle[3].delay = 800;
+    xTaskCreate(vBlinkTask, "BlinkTask4", configMINIMAL_STACK_SIZE, (void *) &pin_toggle[3], tskIDLE_PRIORITY + 1, NULL);
+
+    vTaskStartScheduler();
+}
+
+void vApplicationTickHook(void){
+
+}
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName){
+
+}
+
+void vApplicationIdleHook(void){
+
+}
+
+void vApplicationMallocFailedHook(void){
+
+}
+#endif
